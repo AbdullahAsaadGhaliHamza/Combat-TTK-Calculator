@@ -1,0 +1,13 @@
+{
+  "name": "ttk-calculator",
+  "version": "1.0.0",
+  "description": "Genre-agnostic TTK calculator with heatmaps, DPS breakdown, status effects, and range falloff.",
+  "main": "core/engine.js",
+  "scripts": {
+    "report": "node tools/ttk.js --report --distance=40",
+    "examples": "node examples.js",
+    "export": "node tools/ttk.js --csv --json --distance=40 --out=./output"
+  },
+  "engines": { "node": ">=14.0.0" },
+  "license": "MIT"
+}

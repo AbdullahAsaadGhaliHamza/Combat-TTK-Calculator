@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TTK Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bg2:#161b25;--bg3:#1e2533;--bg4:#252d3d;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#e8eaf0;--text2:#8b919e;--text3:#555e6e;
+  --accent:#378ADD;--abg:rgba(55,138,221,0.12);
+  --danger:#e53935;--warn:#f4a800;--ok:#43a047;
+  --r:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+.topbar{height:46px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0}
+.logo{font-size:14px;font-weight:600;letter-spacing:-0.01em}
+.sep{width:1px;height:18px;background:var(--border2)}
+.topbar-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+
+.layout{display:grid;grid-template-columns:280px 1fr 300px;flex:1;overflow:hidden}
+.panel{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.rpanel{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+.ps{padding:11px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ps-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.scroll{overflow-y:auto;flex:1}
+.scroll::-webkit-scrollbar{width:4px}
+.scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:11px;color:var(--text2)}
+input[type=number],input[type=text],select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;padding:5px 8px;outline:none;transition:border-color 0.12s;font-family:inherit}
+input:focus,select:focus{border-color:var(--accent)}
+select option{background:var(--bg3)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+
+.btn{font-size:11px;font-weight:500;padding:6px 10px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:background 0.1s;white-space:nowrap}
+.btn:hover{background:var(--bg3)}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:#2a74c7}
+.btn-sm{padding:4px 8px;font-size:10px}
+.btn-danger{border-color:rgba(229,57,53,0.4);color:#ef9a9a}
+.btn-danger:hover{background:rgba(229,57,53,0.12)}
+.btn-row{display:flex;gap:5px;flex-wrap:wrap}
+
+.badge{font-size:9px;font-weight:600;padding:2px 6px;border-radius:10px;text-transform:uppercase;letter-spacing:0.05em}
+.badge-danger{background:rgba(229,57,53,0.15);color:#ef9a9a;border:1px solid rgba(229,57,53,0.3)}
+.badge-warn{background:rgba(244,168,0,0.15);color:#ffe082;border:1px solid rgba(244,168,0,0.3)}
+.badge-ok{background:rgba(67,160,71,0.15);color:#a5d6a7;border:1px solid rgba(67,160,71,0.3)}
+.badge-info{background:var(--abg);color:#90caf9;border:1px solid rgba(55,138,221,0.3)}
+
+.weapon-card{border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:border-color 0.1s;position:relative}
+.weapon-card:hover{border-color:var(--border2)}
+.weapon-card.active{border-color:var(--accent)}
+.weapon-card.disabled{opacity:0.45}
+.wc-header{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.wc-color{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wc-name{font-size:12px;font-weight:500;color:var(--text);flex:1}
+.wc-del{font-size:10px;color:var(--text3);cursor:pointer;padding:2px 4px}
+.wc-del:hover{color:var(--danger)}
+.wc-stats{display:flex;gap:8px;flex-wrap:wrap}
+.wc-stat{font-size:10px;color:var(--text3)}
+.wc-stat span{color:var(--text2);font-weight:500}
+.wc-chk{position:absolute;top:8px;right:10px;cursor:pointer;accent-color:var(--accent)}
+
+.enemy-row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:var(--r);cursor:pointer;transition:background 0.08s;margin-bottom:2px}
+.enemy-row:hover{background:var(--bg3)}
+.enemy-row.active{background:var(--bg4)}
+.enemy-chk{cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+.enemy-name{font-size:12px;color:var(--text);flex:1}
+.enemy-hp{font-size:10px;color:var(--text3);min-width:50px;text-align:right;font-family:monospace}
+
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 14px;flex-shrink:0}
+.tab{font-size:11px;font-weight:500;color:var(--text3);padding:10px 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.1s}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--text);border-bottom-color:var(--accent)}
+
+.tab-content{display:none;flex:1;overflow:hidden;flex-direction:column}
+.tab-content.active{display:flex}
+
+.heatmap-area{padding:14px;display:flex;flex-direction:column;gap:10px;flex:1;overflow:hidden}
+.heatmap-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.heatmap-wrap{flex:1;overflow:auto;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl)}
+.heatmap-wrap::-webkit-scrollbar{width:6px;height:6px}
+.heatmap-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+table.heatmap{border-collapse:collapse;font-size:11px;width:100%}
+table.heatmap th{padding:8px 12px;background:var(--bg3);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;border-bottom:1px solid var(--border);border-right:1px solid var(--border);position:sticky;top:0;z-index:2}
+table.heatmap th:first-child{left:0;z-index:3;text-align:left;min-width:140px}
+table.heatmap td{padding:7px 10px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);font-family:monospace;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;transition:filter 0.1s}
+table.heatmap td:hover{filter:brightness(1.3)}
+table.heatmap td:first-child{text-align:left;font-weight:600;font-size:11px;color:var(--text2);background:var(--bg2);position:sticky;left:0;z-index:1;font-family:inherit;padding-left:14px}
+table.heatmap tr:last-child td{border-bottom:none}
+
+.legend-gradient{height:12px;border-radius:4px;width:160px;background:linear-gradient(to right,#43a047,#f4a800,#e53935)}
+.legend-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:2px;width:160px}
+
+.dps-area{padding:14px;flex:1;overflow:auto}
+.dps-area::-webkit-scrollbar{width:6px}
+.dps-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.dps-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:8px}
+.dps-card-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dps-name{font-size:13px;font-weight:500;color:var(--text)}
+.dps-bars{display:flex;flex-direction:column;gap:5px}
+.dps-bar-row{display:flex;align-items:center;gap:8px}
+.dps-bar-label{font-size:10px;color:var(--text3);width:80px;flex-shrink:0}
+.dps-bar-track{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.dps-bar-fill{height:100%;border-radius:3px;transition:width 0.3s}
+.dps-bar-val{font-size:10px;font-weight:600;color:var(--text);min-width:50px;text-align:right;font-family:monospace}
+
+.timeline-area{padding:14px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:10px}
+.chart-wrap{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:12px;min-height:0}
+
+.saved-area{padding:14px;flex:1;overflow:auto}
+.saved-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.saved-card:hover{border-color:var(--border2)}
+.saved-info{flex:1}
+.saved-name{font-size:12px;font-weight:500;color:var(--text)}
+.saved-meta{font-size:10px;color:var(--text3);margin-top:2px}
+
+.inspector-wrap{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.info-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.info-card-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px;font-weight:600}
+.info-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px}
+.info-row:last-child{border-bottom:none}
+.info-row-label{color:var(--text3)}
+.info-row-val{color:var(--text);font-weight:500;font-family:monospace}
+.info-row-val.good{color:#a5d6a7}
+.info-row-val.bad{color:#ef9a9a}
+.info-row-val.warn{color:#ffe082}
+
+.metrics-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex-shrink:0}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+.metric-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px}
+.metric-val{font-size:18px;font-weight:600;color:var(--text)}
+.metric-sub{font-size:9px;color:var(--text3);margin-top:1px}
+
+.range-slider-wrap{display:flex;align-items:center;gap:8px}
+.range-slider-wrap input[type=range]{flex:1;accent-color:var(--accent)}
+.range-val{font-size:11px;font-weight:600;color:var(--accent);min-width:40px;text-align:right}
+
+.status-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:500;border:1px solid transparent;margin:2px}
+
+.empty-state{text-align:center;color:var(--text3);font-size:12px;padding:30px 16px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:8px 16px;border-radius:20px;opacity:0;transition:opacity 0.18s,transform 0.18s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">TTK Calculator</span>
+  <div class="sep"></div>
+  <span id="tbInfo" style="font-size:12px;color:var(--text2)">No scenario loaded</span>
+  <div class="topbar-right">
+    <button class="btn btn-sm" onclick="exportCSV()">CSV</button>
+    <button class="btn btn-sm" onclick="exportJSON()">JSON</button>
+    <button class="btn btn-sm btn-primary" onclick="saveScenario()">Save</button>
+    <button class="btn btn-sm" onclick="loadFile()">Load</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="onFileLoad(event)"/>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="panel">
+    <div class="ps">
+      <div class="ps-title">Weapons</div>
+      <div class="field">
+        <label>Add weapon preset</label>
+        <div style="display:flex;gap:5px">
+          <select id="weaponPreset" style="flex:1"></select>
+          <button class="btn" onclick="addWeaponFromPreset()">Add</button>
+        </div>
+      </div>
+      <button class="btn" onclick="addCustomWeapon()" style="width:100%;margin-top:2px">+ Custom weapon</button>
+    </div>
+
+    <div class="scroll" style="max-height:280px;flex:none">
+      <div style="padding:8px 10px" id="weaponList"></div>
+    </div>
+
+    <div class="ps" id="weaponEditor" style="display:none;flex-shrink:0">
+      <div class="ps-title">Edit weapon</div>
+      <div id="weaponEditorFields"></div>
+    </div>
+
+    <div class="ps" style="flex-shrink:0">
+      <div class="ps-title">Scenario</div>
+      <div class="field">
+        <label>Distance (units)</label>
+        <div class="range-slider-wrap">
+          <input type="range" id="distance" min="0" max="500" value="40" step="1" oninput="document.getElementById('distVal').textContent=this.value;recompute()">
+          <span class="range-val" id="distVal">40</span>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Crit chance +%</label>
+          <input type="number" id="modCrit" value="0" min="0" max="100" onchange="recompute()"/>
+        </div>
+        <div class="field">
+          <label>Damage bonus %</label>
+          <input type="number" id="modDmg" value="0" min="-100" onchange="recompute()"/>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Status chance +%</label>
+          <input type="number" id="modStatus" value="0" min="0" max="100" onchange="recompute()"/>
+        </div>
+        <div class="field">
+          <label>Hit chance +% (tactics)</label>
+          <input type="number" id="modHit" value="0" min="-50" max="50" onchange="recompute()"/>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--text2);margin-top:4px">
+        <input type="checkbox" id="modHeadshot" onchange="recompute()" style="accent-color:var(--accent);cursor:pointer"/>
+        Apply headshot multiplier
+      </label>
+    </div>
+
+    <div class="ps" style="flex-shrink:0">
+      <div class="ps-title">Heatmap mode</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-primary" id="modeBtn-ttk" onclick="setMode('ttk')">TTK (s)</button>
+        <button class="btn btn-sm" id="modeBtn-shots" onclick="setMode('shots')">Shots</button>
+        <button class="btn btn-sm" id="modeBtn-dps" onclick="setMode('dps')">DPS</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('heatmap',this)">Heatmap</div>
+      <div class="tab" onclick="switchTab('dps',this)">DPS breakdown</div>
+      <div class="tab" onclick="switchTab('timeline',this)">Timeline</div>
+      <div class="tab" onclick="switchTab('saved',this)">Saved</div>
+    </div>
+
+    <div class="tab-content active" id="tab-heatmap">
+      <div class="heatmap-area">
+        <div class="metrics-strip" id="metricsStrip">
+          <div class="metric"><div class="metric-label">Weapons</div><div class="metric-val" id="mWeapons">0</div></div>
+          <div class="metric"><div class="metric-label">Enemies</div><div class="metric-val" id="mEnemies">0</div></div>
+          <div class="metric"><div class="metric-label">Best TTK</div><div class="metric-val" id="mBest">-</div><div class="metric-sub" id="mBestSub"></div></div>
+          <div class="metric"><div class="metric-label">Worst TTK</div><div class="metric-val" id="mWorst">-</div><div class="metric-sub" id="mWorstSub"></div></div>
+        </div>
+        <div class="heatmap-controls">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="legend-gradient"></div>
+            <div>
+              <div class="legend-labels"><span id="lgMin">fast</span><span id="lgMax">slow</span></div>
+            </div>
+          </div>
+          <span style="font-size:10px;color:var(--text3);margin-left:8px">Click a cell for details</span>
+        </div>
+        <div class="heatmap-wrap" id="heatmapWrap">
+          <div class="empty-state">Add weapons and select enemies to generate the heatmap.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-dps">
+      <div class="dps-area" id="dpsArea">
+        <div class="empty-state">Add weapons to see DPS breakdown.</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-timeline">
+      <div class="timeline-area">
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
+          <div class="field" style="margin:0;flex:1">
+            <label style="font-size:11px;color:var(--text2)">Weapon for timeline</label>
+            <select id="tlWeapon" onchange="updateTimeline()"></select>
+          </div>
+          <div class="field" style="margin:0;flex:1">
+            <label style="font-size:11px;color:var(--text2)">Enemy for timeline</label>
+            <select id="tlEnemy" onchange="updateTimeline()"></select>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="timelineChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-saved">
+      <div class="saved-area" id="savedArea">
+        <div class="empty-state">No saved scenarios yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rpanel">
+    <div class="ps" style="flex-shrink:0">
+      <div class="ps-title">Enemies</div>
+      <div class="field">
+        <label>Filter</label>
+        <input type="text" id="enemyFilter" placeholder="Search enemies..." oninput="renderEnemyList()"/>
+      </div>
+    </div>
+    <div class="scroll" style="flex:1" id="enemyListWrap"></div>
+    <div class="ps" style="flex-shrink:0">
+      <div class="ps-title">Cell inspector</div>
+      <div style="font-size:11px;color:var(--text3)" id="inspectorHint">Click a heatmap cell.</div>
+    </div>
+    <div class="scroll" style="flex:1" id="inspectorWrap"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFS = {"version":"1.0.0","damage_types":[{"id":"physical","name":"Physical","color":"#e0e0e0"},{"id":"fire","name":"Fire","color":"#ff7043"},{"id":"ice","name":"Ice","color":"#81d4fa"},{"id":"lightning","name":"Lightning","color":"#ffd54f"},{"id":"poison","name":"Poison","color":"#aed581"},{"id":"arcane","name":"Arcane","color":"#ce93d8"},{"id":"explosive","name":"Explosive","color":"#ffb74d"},{"id":"true","name":"True","color":"#ffffff"}],"weapon_classes":[{"id":"assault_rifle","name":"Assault Rifle","genre":"shooter","defaults":{"damage":28,"damage_type":"physical","fire_rate":750,"mag_size":30,"reload_time":2.4,"headshot_multiplier":1.5,"crit_chance":0,"crit_multiplier":1.5,"range_falloff":{"type":"linear","near":0,"far":100,"min_pct":0.6},"pellets":1,"burst_size":0,"status_chance":0,"status_effect":null}},{"id":"smg","name":"SMG","genre":"shooter","defaults":{"damage":18,"damage_type":"physical","fire_rate":1100,"mag_size":32,"reload_time":1.9,"headshot_multiplier":1.4,"crit_chance":0,"crit_multiplier":1.5,"range_falloff":{"type":"linear","near":0,"far":50,"min_pct":0.45},"pellets":1,"burst_size":0,"status_chance":0,"status_effect":null}},{"id":"sniper","name":"Sniper Rifle","genre":"shooter","defaults":{"damage":140,"damage_type":"physical","fire_rate":40,"mag_size":5,"reload_time":3.5,"headshot_multiplier":2.5,"crit_chance":20,"crit_multiplier":2.0,"range_falloff":{"type":"none","near":0,"far":500,"min_pct":1.0},"pellets":1,"burst_size":0,"status_chance":0,"status_effect":null}},{"id":"shotgun","name":"Shotgun","genre":"shooter","defaults":{"damage":18,"damage_type":"physical","fire_rate":80,"mag_size":8,"reload_time":3.0,"headshot_multiplier":1.2,"crit_chance":5,"crit_multiplier":1.5,"range_falloff":{"type":"exponential","near":0,"far":30,"min_pct":0.2},"pellets":8,"burst_size":0,"status_chance":0,"status_effect":null}},{"id":"pistol","name":"Pistol","genre":"shooter","defaults":{"damage":35,"damage_type":"physical","fire_rate":400,"mag_size":15,"reload_time":1.8,"headshot_multiplier":2.0,"crit_chance":5,"crit_multiplier":2.0,"range_falloff":{"type":"linear","near":0,"far":50,"min_pct":0.7},"pellets":1,"burst_size":0,"status_chance":0,"status_effect":null}},{"id":"lmg","name":"LMG","genre":"shooter","defaults":{"damage":32,"damage_type":"physical","fire_rate":650,"mag_size":100,"reload_time":5.0,"headshot_multiplier":1.3,"crit_chance":0,"crit_multiplier":1.5,"range_falloff":{"type":"linear","near":0,"far":120,"min_pct":0.55},"pellets":1,"burst_size":0,"status_chance":0,"status_effect":null}},{"id":"melee_fast","name":"Fast Melee","genre":"arpg","defaults":{"damage":45,"damage_type":"physical","fire_rate":180,"mag_size":0,"reload_time":0,"headshot_multiplier":1.0,"crit_chance":10,"crit_multiplier":2.0,"range_falloff":{"type":"none","near":0,"far":5,"min_pct":1.0},"pellets":1,"burst_size":0,"status_chance":15,"status_effect":"bleed"}},{"id":"melee_heavy","name":"Heavy Melee","genre":"arpg","defaults":{"damage":120,"damage_type":"physical","fire_rate":60,"mag_size":0,"reload_time":0,"headshot_multiplier":1.0,"crit_chance":15,"crit_multiplier":2.5,"range_falloff":{"type":"none","near":0,"far":3,"min_pct":1.0},"pellets":1,"burst_size":0,"status_chance":20,"status_effect":"stun"}},{"id":"staff_fire","name":"Fire Staff","genre":"arpg","defaults":{"damage":65,"damage_type":"fire","fire_rate":120,"mag_size":0,"reload_time":0,"headshot_multiplier":1.0,"crit_chance":8,"crit_multiplier":2.0,"range_falloff":{"type":"none","near":0,"far":200,"min_pct":1.0},"pellets":1,"burst_size":0,"status_chance":35,"status_effect":"burn"}},{"id":"bow","name":"Bow","genre":"arpg","defaults":{"damage":80,"damage_type":"physical","fire_rate":90,"mag_size":0,"reload_time":0,"headshot_multiplier":2.0,"crit_chance":12,"crit_multiplier":2.0,"range_falloff":{"type":"linear","near":10,"far":150,"min_pct":0.65},"pellets":1,"burst_size":0,"status_chance":25,"status_effect":"poison"}},{"id":"tactics_sword","name":"Sword (Tactics)","genre":"tactics","defaults":{"damage":55,"damage_type":"physical","fire_rate":0,"mag_size":0,"reload_time":0,"headshot_multiplier":1.0,"crit_chance":10,"crit_multiplier":1.5,"range_falloff":{"type":"none","near":0,"far":1,"min_pct":1.0},"pellets":1,"burst_size":0,"ap_cost":2,"hit_chance_base":80,"terrain_bonus":0,"status_chance":10,"status_effect":"bleed"}},{"id":"tactics_rifle","name":"Rifle (Tactics)","genre":"tactics","defaults":{"damage":70,"damage_type":"physical","fire_rate":0,"mag_size":4,"reload_time":0,"headshot_multiplier":1.5,"crit_chance":15,"crit_multiplier":2.0,"range_falloff":{"type":"linear","near":2,"far":20,"min_pct":0.5},"pellets":1,"burst_size":0,"ap_cost":3,"hit_chance_base":70,"terrain_bonus":0,"status_chance":0,"status_effect":null}}],"enemy_presets":[{"id":"grunt","name":"Grunt","hp":100,"shield":0,"armor":0,"armor_type":"none","resistances":{},"tags":["infantry","common"]},{"id":"heavy","name":"Heavy","hp":350,"shield":0,"armor":50,"armor_type":"flat","resistances":{},"tags":["infantry","tanky"]},{"id":"shielded","name":"Shield Trooper","hp":150,"shield":200,"armor":0,"armor_type":"none","resistances":{},"tags":["infantry","shielded"]},{"id":"armored_vest","name":"Armored Vest","hp":200,"shield":0,"armor":30,"armor_type":"flat","resistances":{},"tags":["infantry","armored"]},{"id":"elite","name":"Elite","hp":500,"shield":150,"armor":75,"armor_type":"flat","resistances":{},"tags":["elite"]},{"id":"boss_light","name":"Boss (Light)","hp":1500,"shield":0,"armor":100,"armor_type":"flat","resistances":{},"tags":["boss"]},{"id":"boss_heavy","name":"Boss (Heavy)","hp":3000,"shield":500,"armor":200,"armor_type":"flat","resistances":{},"tags":["boss","tanky"]},{"id":"fire_immune","name":"Fire Resistant","hp":250,"shield":0,"armor":0,"armor_type":"none","resistances":{"fire":0.75},"tags":["elemental"]},{"id":"ice_weak","name":"Ice Vulnerable","hp":200,"shield":0,"armor":0,"armor_type":"none","resistances":{"ice":1.5},"tags":["elemental"]},{"id":"physical_res","name":"Phys. Resistant","hp":300,"shield":0,"armor":0,"armor_type":"percent","resistances":{"physical":0.5},"tags":["elemental"]},{"id":"swarm","name":"Swarm Unit","hp":40,"shield":0,"armor":0,"armor_type":"none","resistances":{},"tags":["swarm","common"]},{"id":"drone","name":"Drone","hp":80,"shield":50,"armor":0,"armor_type":"none","resistances":{},"tags":["mechanical","common"]},{"id":"mech","name":"Mech","hp":800,"shield":0,"armor":0,"armor_type":"percent","resistances":{"physical":0.6,"fire":1.2},"tags":["mechanical","boss"]},{"id":"zombie","name":"Zombie","hp":180,"shield":0,"armor":0,"armor_type":"none","resistances":{"fire":1.3,"bleed":0.5},"tags":["undead","common"]}],"status_effects":{"burn":{"name":"Burn","dps":15,"duration":4,"tick_rate":1,"stacks":false,"color":"#ff7043"},"bleed":{"name":"Bleed","dps":10,"duration":5,"tick_rate":0.5,"stacks":true,"max_stacks":5,"color":"#f44336"},"poison":{"name":"Poison","dps":8,"duration":8,"tick_rate":1,"stacks":false,"color":"#aed581"},"shock":{"name":"Shock","dps":20,"duration":2,"tick_rate":0.5,"stacks":false,"color":"#ffd54f"},"freeze":{"name":"Freeze","dps":0,"duration":2,"tick_rate":1,"stacks":false,"color":"#81d4fa"},"stun":{"name":"Stun","dps":0,"duration":1.5,"tick_rate":1,"stacks":false,"color":"#ffb74d"},"corrode":{"name":"Corrode","dps":5,"duration":6,"tick_rate":1,"stacks":true,"max_stacks":3,"color":"#ce93d8","armor_shred":10}},"range_presets":[{"id":"point_blank","name":"Point Blank","distance":5},{"id":"close","name":"Close","distance":15},{"id":"medium","name":"Medium","distance":40},{"id":"long","name":"Long","distance":80},{"id":"extreme","name":"Extreme","distance":150}]};
+
+const WEAPON_COLORS=["#e53935","#1e88e5","#43a047","#f4a800","#8e24aa","#00897b","#f57c00","#546e7a","#d81b60","#00acc1","#6d4c41","#c0ca33","#5e35b1","#ff7043","#29b6f6"];
+let colorIdx=0;
+
+const state={
+  weapons:[],
+  enemies:new Set(),
+  heatmapCells:[],
+  mode:"ttk",
+  activeCell:null,
+  savedScenarios:[],
+  activeWeaponId:null
+};
+
+let tlChart=null;
+
+function getModifiers(){
+  return{
+    headshot:document.getElementById("modHeadshot").checked,
+    crit_chance_bonus:parseFloat(document.getElementById("modCrit").value)||0,
+    damage_bonus:parseFloat(document.getElementById("modDmg").value)||0,
+    status_chance_bonus:parseFloat(document.getElementById("modStatus").value)||0,
+    hit_chance_bonus:parseFloat(document.getElementById("modHit").value)||0
+  };
+}
+
+function getDistance(){return parseFloat(document.getElementById("distance").value)||40}
+
+function rangeFalloff(weapon,dist){
+  const rf=weapon.range_falloff;
+  if(!rf||rf.type==="none")return 1;
+  const near=rf.near||0,far=rf.far||100,minP=rf.min_pct??0.5;
+  if(dist<=near)return 1;
+  if(dist>=far)return minP;
+  const t=(dist-near)/(far-near);
+  if(rf.type==="linear")return 1-t*(1-minP);
+  if(rf.type==="exponential")return Math.max(minP,Math.pow(1-t,1.5)*(1-minP)+minP);
+  return 1;
+}
+
+function armorMit(raw,enemy,dtype){
+  const armor=enemy.armor||0,at=enemy.armor_type||"none";
+  let d=raw;
+  if(at==="flat")d=Math.max(1,raw-armor);
+  else if(at==="percent")d=raw*(1-Math.min(0.9,armor/100));
+  const res=(enemy.resistances||{})[dtype]??1;
+  return Math.max(0,d*res);
+}
+
+function shieldDmg(raw,enemy,dtype){
+  const shd=enemy.shield||0;
+  if(shd<=0)return{s:0,h:raw};
+  const sRes=(enemy.shield_resistances||{})[dtype]??1;
+  const sd=raw*sRes;
+  return{s:Math.min(sd,shd),h:Math.max(0,sd-shd)};
+}
+
+function critDmg(base,chance,mult){
+  const c=Math.max(0,Math.min(100,chance))/100;
+  return base*(1+c*(mult-1));
+}
+
+function statusTotalDmg(sid,stacks){
+  const s=DEFS.status_effects[sid];
+  if(!s)return 0;
+  const sm=s.stacks?Math.min(stacks||1,s.max_stacks||1):1;
+  return s.dps*s.duration*sm;
+}
+
+function effectiveDmgPerShot(weapon,enemy,mods,dist){
+  const distM=rangeFalloff(weapon,dist);
+  const pellets=weapon.pellets||1;
+  let raw=weapon.damage*pellets*distM*(1+(mods.damage_bonus||0)/100);
+  const cc=(weapon.crit_chance||0)+(mods.crit_chance_bonus||0);
+  const cm=(weapon.crit_multiplier||1.5);
+  raw=critDmg(raw,cc,cm);
+  if(mods.headshot)raw*=(weapon.headshot_multiplier||1);
+  const sd=shieldDmg(raw,enemy,weapon.damage_type||"physical");
+  const hpd=armorMit(sd.h,enemy,weapon.damage_type||"physical");
+  return{raw,shield_dmg:sd.s,hp_dmg:hpd,total:hpd+sd.s,dist_mult:distM};
+}
+
+function calcTTK(weapon,enemy,mods,dist){
+  const isTactics=weapon.fire_rate===0;
+  if(isTactics){
+    const hitChance=Math.max(5,Math.min(99,(weapon.hit_chance_base||75)+(mods.hit_chance_bonus||0)))/100;
+    const apCost=weapon.ap_cost||2;
+    const atkPerTurn=Math.floor(4/apCost);
+    const dm=effectiveDmgPerShot(weapon,enemy,mods,dist);
+    const avgPerAtk=dm.total*hitChance;
+    const totalHp=enemy.hp+(enemy.shield||0);
+    const turns=totalHp>0&&avgPerAtk>0?Math.ceil(totalHp/(avgPerAtk*atkPerTurn)):null;
+    return{ttk:turns,ttk_unit:"turns",killed:turns!==null,shots:Math.ceil(totalHp/Math.max(1,dm.total)*hitChance),dps_burst:avgPerAtk*atkPerTurn,dps_sustained:avgPerAtk*atkPerTurn,shields_first:enemy.shield>0};
+  }
+
+  const isMelee=weapon.mag_size===0;
+  const rps=weapon.fire_rate/60;
+  const magSize=isMelee?Infinity:(weapon.mag_size||Infinity);
+  const reloadTime=weapon.reload_time||0;
+  const dm=effectiveDmgPerShot(weapon,enemy,mods,dist);
+
+  const statusId=weapon.status_effect;
+  const statusChance=(weapon.status_chance||0)+(mods.status_chance_bonus||0);
+  const expectedStatusDmg=statusId&&DEFS.status_effects[statusId]
+    ?(statusChance/100)*statusTotalDmg(statusId,1):0;
+
+  let shp=enemy.shield||0,hp=enemy.hp,shots=0,time=0,mag=isMelee?Infinity:magSize;
+
+  while(hp>0&&shots<50000){
+    if(!isMelee&&mag<=0){time+=reloadTime;mag=magSize;}
+    if(shp>0){
+      shp=Math.max(0,shp-dm.shield_dmg);
+      hp=Math.max(0,hp-dm.hp_dmg);
+    }else{
+      hp=Math.max(0,hp-dm.hp_dmg-expectedStatusDmg);
+    }
+    shots++;if(!isMelee)mag--;time+=1/rps;
+  }
+
+  const dps_b=dm.hp_dmg*rps;
+  const dps_s=isMelee?dps_b:dps_b*(magSize/(magSize+rps*reloadTime));
+
+  return{ttk:hp<=0?parseFloat(time.toFixed(3)):null,ttk_unit:"seconds",killed:hp<=0,shots:hp<=0?shots:null,mags:isMelee?0:Math.ceil(shots/magSize),dps_burst:parseFloat(dps_b.toFixed(2)),dps_sustained:parseFloat(dps_s.toFixed(2)),shields_first:enemy.shield>0};
+}
+
+function recompute(){
+  const mods=getModifiers();
+  const dist=getDistance();
+  const activeEnemies=DEFS.enemy_presets.filter(e=>state.enemies.has(e.id));
+  const cells=[];
+
+  for(const w of state.weapons){
+    if(!w.enabled)continue;
+    for(const e of activeEnemies){
+      const r=calcTTK(w,e,mods,dist);
+      cells.push({weapon_id:w.id,weapon_name:w.name,enemy_id:e.id,enemy_name:e.name,...r});
+    }
+  }
+
+  state.heatmapCells=cells;
+  renderHeatmap();
+  renderDPS();
+  updateMetrics();
+  updateTopbar();
+  populateTimelineSelects();
+  updateTimeline();
+}
+
+function heatColor(norm,mode){
+  if(norm<0)return"rgba(255,255,255,0.04)";
+  const inverted=mode==="dps";
+  const t=inverted?1-norm:norm;
+  if(t<0.5){
+    const f=t*2;
+    const r=Math.round(67+f*(244-67));
+    const g=Math.round(160+f*(168-160));
+    const b=Math.round(71+f*(0-71));
+    return`rgb(${r},${g},${b})`;
+  }else{
+    const f=(t-0.5)*2;
+    const r=Math.round(244+f*(229-244));
+    const g=Math.round(168+f*(57-168));
+    const b=Math.round(0+f*(53-0));
+    return`rgb(${r},${g},${b})`;
+  }
+}
+
+function renderHeatmap(){
+  const wrap=document.getElementById("heatmapWrap");
+  const activeWeapons=state.weapons.filter(w=>w.enabled);
+  const activeEnemies=DEFS.enemy_presets.filter(e=>state.enemies.has(e.id));
+
+  if(activeWeapons.length===0||activeEnemies.length===0){
+    wrap.innerHTML='<div class="empty-state">Add weapons and select enemies to generate the heatmap.</div>';
+    return;
+  }
+
+  const mode=state.mode;
+  const cells=state.heatmapCells;
+  const vals=cells.map(c=>{
+    if(!c.killed)return null;
+    if(mode==="ttk")return c.ttk;
+    if(mode==="shots")return c.shots;
+    if(mode==="dps")return c.dps_burst;
+    return c.ttk;
+  }).filter(v=>v!==null&&isFinite(v));
+
+  const minV=vals.length?Math.min(...vals):0;
+  const maxV=vals.length?Math.max(...vals):1;
+  const range=maxV-minV||1;
+
+  document.getElementById("lgMin").textContent=mode==="ttk"?minV.toFixed(2)+"s":mode==="dps"?minV.toFixed(0)+" dps":minV.toFixed(0);
+  document.getElementById("lgMax").textContent=mode==="ttk"?maxV.toFixed(2)+"s":mode==="dps"?maxV.toFixed(0)+" dps":maxV.toFixed(0);
+
+  let html='<table class="heatmap"><thead><tr><th>Weapon</th>';
+  for(const e of activeEnemies){
+    const tags=e.tags||[];
+    const hasShield=e.shield>0,hasArmor=e.armor>0;
+    const hints=(hasShield?"S ":"")+(hasArmor?"A ":"");
+    html+=`<th title="HP:${e.hp} Shield:${e.shield} Armor:${e.armor}">${e.name}${hints?`<br><span style="font-size:9px;color:#555e6e">${hints.trim()}</span>`:""}</th>`;
+  }
+  html+="</tr></thead><tbody>";
+
+  for(const w of activeWeapons){
+    const dmgTypeColor=(DEFS.damage_types.find(d=>d.id===w.damage_type)||{}).color||"#888";
+    html+=`<tr><td><div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:50%;background:${w._color};flex-shrink:0"></div>${w.name}<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:${dmgTypeColor}22;color:${dmgTypeColor};margin-left:4px;border:1px solid ${dmgTypeColor}44">${w.damage_type||"phys"}</span></div></td>`;
+    for(const e of activeEnemies){
+      const cell=cells.find(c=>c.weapon_id===w.id&&c.enemy_id===e.id);
+      if(!cell){html+="<td>-</td>";continue;}
+      let val,display;
+      if(mode==="ttk"){val=cell.ttk;display=cell.killed?(val<60?val.toFixed(2)+"s":"60s+"):"N/K";}
+      else if(mode==="shots"){val=cell.shots;display=cell.killed?val:"N/K";}
+      else{val=cell.dps_burst;display=val.toFixed(0);}
+      const norm=val!==null&&isFinite(val)?(val-minV)/range:-1;
+      const bg=heatColor(norm,mode);
+      const textColor=norm>0.4&&norm<0.8?"#000":"#fff";
+      html+=`<td style="background:${bg};color:${textColor}" onclick="selectCell('${w.id}','${e.id}')" title="${w.name} vs ${e.name}">${display}</td>`;
+    }
+    html+="</tr>";
+  }
+  html+="</tbody></table>";
+  wrap.innerHTML=html;
+}
+
+function selectCell(weaponId,enemyId){
+  const cell=state.heatmapCells.find(c=>c.weapon_id===weaponId&&c.enemy_id===enemyId);
+  if(!cell)return;
+  state.activeCell={weaponId,enemyId};
+  const weapon=state.weapons.find(w=>w.id===weaponId);
+  const enemy=DEFS.enemy_presets.find(e=>e.id===enemyId);
+  if(!weapon||!enemy)return;
+
+  const mods=getModifiers();
+  const dist=getDistance();
+  const dm=effectiveDmgPerShot(weapon,enemy,mods,dist);
+  const statusId=weapon.status_effect;
+  const statusDef=statusId?DEFS.status_effects[statusId]:null;
+  const dmgTypeDef=DEFS.damage_types.find(d=>d.id===weapon.damage_type)||{color:"#888"};
+
+  document.getElementById("inspectorHint").style.display="none";
+
+  const ttkDisplay=cell.killed
+    ?(cell.ttk_unit==="turns"?cell.ttk+" turns":cell.ttk.toFixed(3)+"s")
+    :"Cannot kill";
+
+  const ttkClass=!cell.killed?"bad":cell.ttk<2?"good":cell.ttk>15?"warn":"";
+
+  const resMults=enemy.resistances||{};
+  const dmgTypeMult=resMults[weapon.damage_type]??1;
+  const resClass=dmgTypeMult>1?"good":dmgTypeMult<1?"bad":"";
+
+  let statusHtml="";
+  if(statusDef){
+    statusHtml=`<div class="info-row"><span class="info-row-label">Status</span><span class="info-row-val" style="color:${statusDef.color}">${statusDef.name} (${weapon.status_chance||0}%)</span></div>
+    <div class="info-row"><span class="info-row-label">Status total dmg</span><span class="info-row-val">${statusTotalDmg(statusId,1).toFixed(0)}</span></div>`;
+  }
+
+  document.getElementById("inspectorWrap").innerHTML=`
+  <div class="inspector-wrap">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${weapon.name} vs ${enemy.name}</div>
+    <div style="font-size:10px;color:var(--text3)">@ ${dist} units  &middot;  ${mods.headshot?"headshot":"body"}</div>
+
+    <div class="info-card">
+      <div class="info-card-title">Result</div>
+      <div class="info-row"><span class="info-row-label">TTK</span><span class="info-row-val ${ttkClass}">${ttkDisplay}</span></div>
+      ${cell.shots?`<div class="info-row"><span class="info-row-label">Shots to kill</span><span class="info-row-val">${cell.shots}</span></div>`:""}
+      ${cell.mags?`<div class="info-row"><span class="info-row-label">Mags required</span><span class="info-row-val ${cell.mags>1?"warn":""}">${cell.mags}</span></div>`:""}
+      <div class="info-row"><span class="info-row-label">DPS (burst)</span><span class="info-row-val">${cell.dps_burst}</span></div>
+      <div class="info-row"><span class="info-row-label">DPS (sustained)</span><span class="info-row-val">${cell.dps_sustained}</span></div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title">Damage breakdown</div>
+      <div class="info-row"><span class="info-row-label">Raw dmg/shot</span><span class="info-row-val">${dm.raw.toFixed(1)}</span></div>
+      <div class="info-row"><span class="info-row-label">After armor</span><span class="info-row-val">${dm.hp_dmg.toFixed(1)}</span></div>
+      ${dm.shield_dmg>0?`<div class="info-row"><span class="info-row-label">Shield dmg/shot</span><span class="info-row-val">${dm.shield_dmg.toFixed(1)}</span></div>`:""}
+      <div class="info-row"><span class="info-row-label">Range mult</span><span class="info-row-val ${dm.dist_mult<0.8?"warn":""}">${(dm.dist_mult*100).toFixed(0)}%</span></div>
+      <div class="info-row"><span class="info-row-label">Dmg type resist</span><span class="info-row-val ${resClass}">${dmgTypeMult===1?"neutral":dmgTypeMult>1?"vulnerable ("+dmgTypeMult+"x)":"resistant ("+dmgTypeMult+"x)"}</span></div>
+      ${statusHtml}
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title">Enemy</div>
+      <div class="info-row"><span class="info-row-label">HP</span><span class="info-row-val">${enemy.hp}</span></div>
+      ${enemy.shield>0?`<div class="info-row"><span class="info-row-label">Shield</span><span class="info-row-val">${enemy.shield}</span></div>`:""}
+      ${enemy.armor>0?`<div class="info-row"><span class="info-row-label">Armor</span><span class="info-row-val">${enemy.armor} (${enemy.armor_type})</span></div>`:""}
+      ${Object.keys(resMults).length>0?`<div class="info-row"><span class="info-row-label">Resistances</span><span class="info-row-val">${Object.entries(resMults).map(([k,v])=>`${k}:${v}x`).join(", ")}</span></div>`:""}
+    </div>
+  </div>`;
+
+  document.getElementById("tlWeapon").value=weaponId;
+  document.getElementById("tlEnemy").value=enemyId;
+  updateTimeline();
+}
+
+function renderDPS(){
+  const el=document.getElementById("dpsArea");
+  const activeWeapons=state.weapons.filter(w=>w.enabled);
+  if(activeWeapons.length===0){el.innerHTML='<div class="empty-state">Add weapons to see DPS breakdown.</div>';return;}
+  const mods=getModifiers();
+  const dist=getDistance();
+  const refEnemy=DEFS.enemy_presets.find(e=>state.enemies.has(e.id))||DEFS.enemy_presets[0];
+
+  const allDPS=activeWeapons.map(w=>{
+    const dm=effectiveDmgPerShot(w,refEnemy,mods,dist);
+    const rps=w.fire_rate>0?w.fire_rate/60:1;
+    const mag=w.mag_size||Infinity;
+    const rt=w.reload_time||0;
+    const db=dm.hp_dmg*rps;
+    const ds=w.mag_size>0?db*(mag/(mag+rps*rt)):db;
+    const sid=w.status_effect;
+    const sdef=sid?DEFS.status_effects[sid]:null;
+    const sch=(w.status_chance||0)+(mods.status_chance_bonus||0);
+    const sdps=sdef?(sch/100)*(sdef.dps):0;
+    return{w,db,ds,dw:ds+sdps,dmg_per_shot:dm.hp_dmg,rps,sdps,sdef};
+  });
+
+  const maxDPS=Math.max(...allDPS.map(d=>d.dw),1);
+
+  el.innerHTML=allDPS.map(({w,db,ds,dw,dmg_per_shot,rps,sdps,sdef})=>`
+  <div class="dps-card">
+    <div class="dps-card-header">
+      <div style="width:9px;height:9px;border-radius:50%;background:${w._color}"></div>
+      <span class="dps-name">${w.name}</span>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">${dmg_per_shot.toFixed(1)} dmg/hit &middot; ${rps.toFixed(1)} rps</span>
+    </div>
+    <div class="dps-bars">
+      <div class="dps-bar-row">
+        <span class="dps-bar-label">Burst DPS</span>
+        <div class="dps-bar-track"><div class="dps-bar-fill" style="width:${(db/maxDPS*100).toFixed(1)}%;background:${w._color}"></div></div>
+        <span class="dps-bar-val">${db.toFixed(1)}</span>
+      </div>
+      <div class="dps-bar-row">
+        <span class="dps-bar-label">Sustained</span>
+        <div class="dps-bar-track"><div class="dps-bar-fill" style="width:${(ds/maxDPS*100).toFixed(1)}%;background:${w._color}88"></div></div>
+        <span class="dps-bar-val">${ds.toFixed(1)}</span>
+      </div>
+      ${sdef?`<div class="dps-bar-row">
+        <span class="dps-bar-label">w/ ${sdef.name}</span>
+        <div class="dps-bar-track"><div class="dps-bar-fill" style="width:${(dw/maxDPS*100).toFixed(1)}%;background:${sdef.color}"></div></div>
+        <span class="dps-bar-val">${dw.toFixed(1)}</span>
+      </div>`:""}
+    </div>
+  </div>`).join("");
+}
+
+function updateTimeline(){
+  const wId=document.getElementById("tlWeapon").value;
+  const eId=document.getElementById("tlEnemy").value;
+  if(!wId||!eId)return;
+  const weapon=state.weapons.find(w=>w.id===wId);
+  const enemy=DEFS.enemy_presets.find(e=>e.id===eId);
+  if(!weapon||!enemy)return;
+
+  const mods=getModifiers();
+  const dist=getDistance();
+  const isTactics=weapon.fire_rate===0;
+  const isMelee=weapon.mag_size===0;
+  const rps=isTactics?1:(weapon.fire_rate/60);
+  const magSize=isMelee?Infinity:(weapon.mag_size||Infinity);
+  const reloadTime=weapon.reload_time||0;
+
+  const dm=effectiveDmgPerShot(weapon,enemy,mods,dist);
+  const points=[];
+  let shp=enemy.shield||0,hp=enemy.hp,shots=0,time=0,mag=isMelee?Infinity:magSize,cumDmg=0;
+  const maxTime=30,maxPts=300,dt=maxTime/maxPts;
+
+  while(time<=maxTime&&hp>0){
+    const fireInterval=1/rps;
+    if(time>=shots*fireInterval){
+      if(!isMelee&&mag<=0){mag=magSize;}
+      if(shp>0){shp=Math.max(0,shp-dm.shield_dmg);hp=Math.max(0,hp-dm.hp_dmg);}
+      else hp=Math.max(0,hp-dm.hp_dmg);
+      cumDmg+=dm.total;
+      shots++;if(!isMelee)mag--;
+    }
+    points.push({t:parseFloat(time.toFixed(3)),hp:Math.max(0,hp),shield:Math.max(0,shp),cumDmg:parseFloat(cumDmg.toFixed(1))});
+    if(hp<=0)break;
+    time+=dt;
+  }
+
+  const labels=points.map(p=>p.t);
+
+  if(tlChart){tlChart.destroy();tlChart=null;}
+  const ctx=document.getElementById("timelineChart").getContext("2d");
+  const datasets=[
+    {label:"HP",data:points.map(p=>p.hp),borderColor:"#e53935",backgroundColor:"#e5393518",borderWidth:1.5,pointRadius:0,tension:0.2,fill:true}
+  ];
+  if(enemy.shield>0){
+    datasets.unshift({label:"Shield",data:points.map(p=>p.shield),borderColor:"#1e88e5",backgroundColor:"#1e88e518",borderWidth:1.5,pointRadius:0,tension:0.2,fill:true});
+  }
+  datasets.push({label:"Cumulative Damage",data:points.map(p=>p.cumDmg),borderColor:"#f4a800",backgroundColor:"transparent",borderWidth:1,pointRadius:0,tension:0.2,yAxisID:"y2"});
+
+  tlChart=new Chart(ctx,{
+    type:"line",
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        legend:{labels:{color:"#8b919e",font:{size:11}}},
+        tooltip:{backgroundColor:"#1e2533",borderColor:"rgba(255,255,255,0.1)",borderWidth:1,titleColor:"#8b919e",bodyColor:"#e8eaf0",callbacks:{title:i=>`t = ${i[0].label}s`}}
+      },
+      scales:{
+        x:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#555e6e",font:{size:10},maxTicksLimit:15},title:{display:true,text:"Time (seconds)",color:"#555e6e",font:{size:10}}},
+        y:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#555e6e",font:{size:10}},title:{display:true,text:"HP / Shield",color:"#555e6e",font:{size:10}}},
+        y2:{position:"right",grid:{display:false},ticks:{color:"#555e6e",font:{size:10}},title:{display:true,text:"Cumulative Dmg",color:"#555e6e",font:{size:10}}}
+      }
+    }
+  });
+}
+
+function populateTimelineSelects(){
+  const ws=document.getElementById("tlWeapon");
+  const es=document.getElementById("tlEnemy");
+  const curW=ws.value,curE=es.value;
+  ws.innerHTML=state.weapons.filter(w=>w.enabled).map(w=>`<option value="${w.id}">${w.name}</option>`).join("");
+  es.innerHTML=[...state.enemies].map(id=>{
+    const e=DEFS.enemy_presets.find(e=>e.id===id);
+    return e?`<option value="${id}">${e.name}`:"";
+  }).join("");
+  if(curW)ws.value=curW;
+  if(curE)es.value=curE;
+}
+
+function updateMetrics(){
+  const activeW=state.weapons.filter(w=>w.enabled).length;
+  const activeE=state.enemies.size;
+  document.getElementById("mWeapons").textContent=activeW;
+  document.getElementById("mEnemies").textContent=activeE;
+  const killed=state.heatmapCells.filter(c=>c.killed&&c.ttk!==null);
+  if(killed.length>0){
+    const best=killed.reduce((a,b)=>a.ttk<b.ttk?a:b);
+    const worst=killed.reduce((a,b)=>a.ttk>b.ttk?a:b);
+    document.getElementById("mBest").textContent=best.ttk_unit==="turns"?best.ttk+"T":best.ttk.toFixed(2)+"s";
+    document.getElementById("mBestSub").textContent=best.weapon_name+" vs "+best.enemy_name;
+    document.getElementById("mWorst").textContent=worst.ttk_unit==="turns"?worst.ttk+"T":worst.ttk.toFixed(2)+"s";
+    document.getElementById("mWorstSub").textContent=worst.weapon_name+" vs "+worst.enemy_name;
+  }else{
+    document.getElementById("mBest").textContent="-";
+    document.getElementById("mWorst").textContent="-";
+    document.getElementById("mBestSub").textContent="";
+    document.getElementById("mWorstSub").textContent="";
+  }
+}
+
+function updateTopbar(){
+  const activeW=state.weapons.filter(w=>w.enabled).length;
+  const activeE=state.enemies.size;
+  document.getElementById("tbInfo").textContent=`${activeW} weapon${activeW!==1?"s":""} &bull; ${activeE} enem${activeE!==1?"ies":"y"} &bull; ${getDistance()} units`;
+}
+
+function addWeaponFromPreset(){
+  const sel=document.getElementById("weaponPreset");
+  const presetId=sel.value;
+  const preset=DEFS.weapon_classes.find(w=>w.id===presetId);
+  if(!preset)return;
+  const color=WEAPON_COLORS[colorIdx%WEAPON_COLORS.length];colorIdx++;
+  const w={...JSON.parse(JSON.stringify(preset.defaults)),id:"w_"+Date.now(),name:preset.name,enabled:true,_color:color,_preset:presetId};
+  state.weapons.push(w);
+  renderWeaponList();
+  recompute();
+  showToast("Added: "+w.name);
+}
+
+function addCustomWeapon(){
+  const color=WEAPON_COLORS[colorIdx%WEAPON_COLORS.length];colorIdx++;
+  const w={id:"w_"+Date.now(),name:"Custom Weapon",enabled:true,_color:color,_preset:null,damage:50,damage_type:"physical",fire_rate:300,mag_size:20,reload_time:2.0,headshot_multiplier:1.5,crit_chance:5,crit_multiplier:1.5,range_falloff:{type:"linear",near:0,far:80,min_pct:0.6},pellets:1,status_chance:0,status_effect:null};
+  state.weapons.push(w);
+  state.activeWeaponId=w.id;
+  renderWeaponList();
+  openWeaponEditor(w.id);
+  recompute();
+}
+
+function renderWeaponList(){
+  const el=document.getElementById("weaponList");
+  if(state.weapons.length===0){el.innerHTML='<div class="empty-state" style="padding:12px 0">No weapons added yet.</div>';return;}
+  el.innerHTML=state.weapons.map(w=>`
+  <div class="weapon-card ${state.activeWeaponId===w.id?"active":""} ${!w.enabled?"disabled":""}" onclick="selectWeapon('${w.id}')">
+    <input type="checkbox" class="wc-chk" ${w.enabled?"checked":""} onclick="event.stopPropagation();toggleWeapon('${w.id}',this.checked)" />
+    <div class="wc-header">
+      <div class="wc-color" style="background:${w._color}"></div>
+      <span class="wc-name">${w.name}</span>
+      <span class="wc-del" onclick="event.stopPropagation();removeWeapon('${w.id}')">&#10005;</span>
+    </div>
+    <div class="wc-stats">
+      <span class="wc-stat">DMG <span>${w.damage}</span></span>
+      <span class="wc-stat">RPM <span>${w.fire_rate||"N/A"}</span></span>
+      ${w.mag_size?`<span class="wc-stat">MAG <span>${w.mag_size}</span></span>`:""}
+      ${w.crit_chance?`<span class="wc-stat">CRIT <span>${w.crit_chance}%</span></span>`:""}
+      ${w.status_effect?`<span class="wc-stat">STS <span>${w.status_effect}</span></span>`:""}
+    </div>
+  </div>`).join("");
+}
+
+function selectWeapon(id){
+  state.activeWeaponId=id;
+  renderWeaponList();
+  openWeaponEditor(id);
+}
+
+function openWeaponEditor(id){
+  const w=state.weapons.find(x=>x.id===id);
+  if(!w)return;
+  const el=document.getElementById("weaponEditor");
+  const fe=document.getElementById("weaponEditorFields");
+  el.style.display="block";
+
+  const dtOptions=DEFS.damage_types.map(d=>`<option value="${d.id}" ${w.damage_type===d.id?"selected":""}>${d.name}</option>`).join("");
+  const seOptions=`<option value="">None</option>`+Object.keys(DEFS.status_effects).map(k=>`<option value="${k}" ${w.status_effect===k?"selected":""}>${DEFS.status_effects[k].name}</option>`).join("");
+  const rfOptions=["none","linear","exponential"].map(t=>`<option value="${t}" ${(w.range_falloff?.type||"linear")===t?"selected":""}>${t}</option>`).join("");
+
+  fe.innerHTML=`
+    <div class="field"><label>Name</label><input type="text" value="${w.name}" onchange="updateWeapon('${id}','name',this.value)"/></div>
+    <div class="row2">
+      <div class="field"><label>Damage</label><input type="number" value="${w.damage}" onchange="updateWeapon('${id}','damage',parseFloat(this.value))"/></div>
+      <div class="field"><label>Damage type</label><select onchange="updateWeapon('${id}','damage_type',this.value)">${dtOptions}</select></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Fire rate (RPM)</label><input type="number" value="${w.fire_rate||0}" onchange="updateWeapon('${id}','fire_rate',parseFloat(this.value))"/></div>
+      <div class="field"><label>Mag size</label><input type="number" value="${w.mag_size||0}" onchange="updateWeapon('${id}','mag_size',parseFloat(this.value))"/></div>
+      <div class="field"><label>Reload (s)</label><input type="number" step="0.1" value="${w.reload_time||0}" onchange="updateWeapon('${id}','reload_time',parseFloat(this.value))"/></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Pellets</label><input type="number" value="${w.pellets||1}" min="1" onchange="updateWeapon('${id}','pellets',parseInt(this.value))"/></div>
+      <div class="field"><label>Headshot mult</label><input type="number" step="0.1" value="${w.headshot_multiplier||1}" onchange="updateWeapon('${id}','headshot_multiplier',parseFloat(this.value))"/></div>
+      <div class="field"><label>Crit chance %</label><input type="number" value="${w.crit_chance||0}" onchange="updateWeapon('${id}','crit_chance',parseFloat(this.value))"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Crit multiplier</label><input type="number" step="0.1" value="${w.crit_multiplier||1.5}" onchange="updateWeapon('${id}','crit_multiplier',parseFloat(this.value))"/></div>
+      <div class="field"><label>Status chance %</label><input type="number" value="${w.status_chance||0}" onchange="updateWeapon('${id}','status_chance',parseFloat(this.value))"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Status effect</label><select onchange="updateWeapon('${id}','status_effect',this.value||null)">${seOptions}</select></div>
+      <div class="field"><label>Range falloff</label><select onchange="updateWeaponRF('${id}','type',this.value)">${rfOptions}</select></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>RF near</label><input type="number" value="${w.range_falloff?.near||0}" onchange="updateWeaponRF('${id}','near',parseFloat(this.value))"/></div>
+      <div class="field"><label>RF far</label><input type="number" value="${w.range_falloff?.far||100}" onchange="updateWeaponRF('${id}','far',parseFloat(this.value))"/></div>
+      <div class="field"><label>RF min%</label><input type="number" step="0.05" value="${w.range_falloff?.min_pct??0.5}" onchange="updateWeaponRF('${id}','min_pct',parseFloat(this.value))"/></div>
+    </div>`;
+}
+
+function updateWeapon(id,key,val){
+  const w=state.weapons.find(x=>x.id===id);
+  if(!w)return;
+  w[key]=val;
+  renderWeaponList();
+  recompute();
+}
+
+function updateWeaponRF(id,key,val){
+  const w=state.weapons.find(x=>x.id===id);
+  if(!w)return;
+  if(!w.range_falloff)w.range_falloff={type:"linear",near:0,far:100,min_pct:0.5};
+  w.range_falloff[key]=val;
+  recompute();
+}
+
+function toggleWeapon(id,on){
+  const w=state.weapons.find(x=>x.id===id);
+  if(w)w.enabled=on;
+  renderWeaponList();
+  recompute();
+}
+
+function removeWeapon(id){
+  state.weapons=state.weapons.filter(w=>w.id!==id);
+  if(state.activeWeaponId===id){state.activeWeaponId=null;document.getElementById("weaponEditor").style.display="none";}
+  renderWeaponList();
+  recompute();
+}
+
+function renderEnemyList(){
+  const filter=document.getElementById("enemyFilter").value.toLowerCase();
+  const el=document.getElementById("enemyListWrap");
+  const filtered=DEFS.enemy_presets.filter(e=>e.name.toLowerCase().includes(filter)||e.tags.some(t=>t.includes(filter)));
+  el.innerHTML=`<div style="padding:8px 10px">` + filtered.map(e=>`
+    <div class="enemy-row ${state.enemies.has(e.id)?"active":""}" onclick="toggleEnemy('${e.id}')">
+      <input type="checkbox" class="enemy-chk" ${state.enemies.has(e.id)?"checked":""} onclick="event.stopPropagation();toggleEnemy('${e.id}')" />
+      <span class="enemy-name">${e.name}</span>
+      <span class="enemy-hp">${e.hp}hp${e.shield>0?" +"+e.shield+"s":""}</span>
+    </div>`).join("") + "</div>";
+}
+
+function toggleEnemy(id){
+  if(state.enemies.has(id))state.enemies.delete(id);
+  else state.enemies.add(id);
+  renderEnemyList();
+  recompute();
+}
+
+function setMode(mode){
+  state.mode=mode;
+  ["ttk","shots","dps"].forEach(m=>{
+    const b=document.getElementById("modeBtn-"+m);
+    b.className="btn btn-sm"+(m===mode?" btn-primary":"");
+  });
+  renderHeatmap();
+}
+
+function switchTab(name,el){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+  el.classList.add("active");
+  const tc=document.getElementById("tab-"+name);
+  if(tc)tc.classList.add("active");
+  if(name==="timeline")updateTimeline();
+}
+
+function exportCSV(){
+  if(state.heatmapCells.length===0){showToast("No data to export");return;}
+  const activeWeapons=state.weapons.filter(w=>w.enabled);
+  const activeEnemies=DEFS.enemy_presets.filter(e=>state.enemies.has(e.id));
+  const csv=[];
+  csv.push("TTK Heatmap (seconds)");
+  csv.push(["Weapon\\Enemy",...activeEnemies.map(e=>e.name)].join(","));
+  for(const w of activeWeapons){
+    const row=[w.name,...activeEnemies.map(e=>{
+      const c=state.heatmapCells.find(x=>x.weapon_id===w.id&&x.enemy_id===e.id);
+      return c&&c.killed?c.ttk.toFixed(3):"N/K";
+    })];
+    csv.push(row.join(","));
+  }
+  csv.push("","DPS Breakdown");
+  csv.push(["Weapon","Burst DPS","Sustained DPS","Fire Rate","Damage/shot","Mag Size","Reload"].join(","));
+  for(const w of activeWeapons){
+    const mods=getModifiers();
+    const dist=getDistance();
+    const refE=DEFS.enemy_presets.find(e=>state.enemies.has(e.id))||DEFS.enemy_presets[0];
+    const dm=effectiveDmgPerShot(w,refE,mods,dist);
+    const rps=w.fire_rate/60;
+    const db=dm.hp_dmg*rps;
+    const ds=w.mag_size>0?db*(w.mag_size/(w.mag_size+rps*(w.reload_time||0))):db;
+    csv.push([w.name,db.toFixed(1),ds.toFixed(1),w.fire_rate,dm.hp_dmg.toFixed(1),w.mag_size||0,w.reload_time||0].join(","));
+  }
+  csv.push("","Shots to Kill");
+  csv.push(["Weapon\\Enemy",...activeEnemies.map(e=>e.name)].join(","));
+  for(const w of activeWeapons){
+    const row=[w.name,...activeEnemies.map(e=>{
+      const c=state.heatmapCells.find(x=>x.weapon_id===w.id&&x.enemy_id===e.id);
+      return c&&c.killed?c.shots:"N/K";
+    })];
+    csv.push(row.join(","));
+  }
+  const blob=new Blob([csv.join("\n")],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.download="ttk_heatmap.csv";a.href=URL.createObjectURL(blob);a.click();URL.revokeObjectURL(a.href);
+  showToast("CSV exported");
+}
+
+function exportJSON(){
+  const data={
+    meta:{generated:new Date().toISOString(),distance:getDistance(),modifiers:getModifiers()},
+    weapons:state.weapons.map(({_color,...w})=>w),
+    enemies:[...state.enemies].map(id=>DEFS.enemy_presets.find(e=>e.id===id)).filter(Boolean),
+    heatmap:state.heatmapCells,
+    dps_breakdown:state.weapons.filter(w=>w.enabled).map(w=>{
+      const mods=getModifiers(),dist=getDistance();
+      const refE=DEFS.enemy_presets.find(e=>state.enemies.has(e.id))||DEFS.enemy_presets[0];
+      const dm=effectiveDmgPerShot(w,refE,mods,dist);
+      const rps=w.fire_rate>0?w.fire_rate/60:1;
+      const db=dm.hp_dmg*rps;
+      const ds=w.mag_size>0?db*(w.mag_size/(w.mag_size+rps*(w.reload_time||0))):db;
+      return{weapon:w.name,dps_burst:parseFloat(db.toFixed(2)),dps_sustained:parseFloat(ds.toFixed(2)),dmg_per_shot:parseFloat(dm.hp_dmg.toFixed(2))};
+    })
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.download="ttk_results.json";a.href=URL.createObjectURL(blob);a.click();URL.revokeObjectURL(a.href);
+  showToast("JSON exported");
+}
+
+function saveScenario(){
+  if(state.weapons.length===0){showToast("Nothing to save");return;}
+  const sc={
+    id:Date.now(),
+    name:`Scenario ${state.savedScenarios.length+1}`,
+    saved:new Date().toISOString(),
+    weapons:JSON.parse(JSON.stringify(state.weapons)),
+    enemies:[...state.enemies],
+    distance:getDistance(),
+    modifiers:getModifiers()
+  };
+  state.savedScenarios.unshift(sc);
+  renderSaved();
+  showToast("Scenario saved");
+}
+
+function renderSaved(){
+  const el=document.getElementById("savedArea");
+  if(state.savedScenarios.length===0){el.innerHTML='<div class="empty-state">No saved scenarios yet.</div>';return;}
+  el.innerHTML=state.savedScenarios.map(s=>`
+  <div class="saved-card" onclick="loadScenario(${s.id})">
+    <div class="saved-info">
+      <div class="saved-name">${s.name}</div>
+      <div class="saved-meta">${s.weapons.length} weapons &middot; ${s.enemies.length} enemies &middot; ${s.distance}u &middot; ${new Date(s.saved).toLocaleTimeString()}</div>
+    </div>
+    <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteScenario(${s.id})">&#10005;</button>
+  </div>`).join("");
+}
+
+function loadScenario(id){
+  const s=state.savedScenarios.find(x=>x.id===id);
+  if(!s)return;
+  state.weapons=JSON.parse(JSON.stringify(s.weapons));
+  state.enemies=new Set(s.enemies);
+  document.getElementById("distance").value=s.distance;
+  document.getElementById("distVal").textContent=s.distance;
+  renderWeaponList();
+  renderEnemyList();
+  recompute();
+  showToast("Loaded scenario");
+}
+
+function deleteScenario(id){
+  state.savedScenarios=state.savedScenarios.filter(s=>s.id!==id);
+  renderSaved();
+}
+
+function loadFile(){document.getElementById("fileInput").click();}
+function onFileLoad(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.weapons){state.weapons=data.weapons.map(w=>({...w,_color:w._color||WEAPON_COLORS[colorIdx++%WEAPON_COLORS.length],enabled:w.enabled??true}));}
+      if(data.enemies){state.enemies=new Set((data.enemies||[]).map(e=>e.id||e));}
+      if(data.meta?.distance){document.getElementById("distance").value=data.meta.distance;document.getElementById("distVal").textContent=data.meta.distance;}
+      renderWeaponList();renderEnemyList();recompute();
+      showToast("Loaded from file");
+    }catch(err){showToast("Load failed: "+err.message);}
+    e.target.value="";
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg){
+  const el=document.getElementById("toast");
+  el.textContent=msg;el.classList.add("show");
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2200);
+}
+
+function populatePresets(){
+  const sel=document.getElementById("weaponPreset");
+  sel.innerHTML=DEFS.weapon_classes.map(w=>`<option value="${w.id}">[${w.genre}] ${w.name}</option>`).join("");
+}
+
+populatePresets();
+
+const defaultWeapons=["assault_rifle","smg","sniper","shotgun"];
+for(const id of defaultWeapons){
+  const p=DEFS.weapon_classes.find(w=>w.id===id);
+  if(!p)continue;
+  const color=WEAPON_COLORS[colorIdx%WEAPON_COLORS.length];colorIdx++;
+  state.weapons.push({...JSON.parse(JSON.stringify(p.defaults)),id:"w_"+Date.now()+"_"+id,name:p.name,enabled:true,_color:color,_preset:id});
+}
+
+const defaultEnemies=["grunt","heavy","shielded","elite","boss_light"];
+for(const id of defaultEnemies)state.enemies.add(id);
+
+renderWeaponList();
+renderEnemyList();
+recompute();
+</script>
+</body>
+</html>
