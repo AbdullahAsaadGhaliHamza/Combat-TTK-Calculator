@@ -1,5 +1,7 @@
 # TTK Calculator
 
+<img width="1920" height="1080" alt="TTKCalculator" src="https://github.com/user-attachments/assets/83ec6fa5-3ced-4726-b610-136a7c0de7ed" />
+
 A genre-agnostic Time-to-Kill calculator for game designers. Input weapon stats and enemy health pools, generate TTK heatmaps across every weapon-enemy combination, and catch balance problems before playtesting.
 
 Works for shooters (FPS/TPS), ARPGs, and tactics/turn-based games. All three genres are handled by the same engine with different inputs.
